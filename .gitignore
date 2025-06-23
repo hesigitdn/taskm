@@ -1,0 +1,10 @@
+/vendor
+/node_modules
+/storage
+/public/storage
+/bootstrap/cache
+/resources/views/compiled
+.env
+.gitattributes
+.idea
+.vscode

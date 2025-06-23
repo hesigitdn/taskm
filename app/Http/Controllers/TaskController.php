@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class TaskController extends Controller
 {
@@ -16,7 +17,8 @@ class TaskController extends Controller
         }
 
         if ($request->has('status') && $request->status != '') {
-            $query->where('completed', $request->status);
+            // Perbaikan dari 'status' menjadi 'completed'
+            $query->where('completed', filter_var($request->status, FILTER_VALIDATE_BOOLEAN));
         }
 
         $tasks = $query->get();
@@ -28,17 +30,16 @@ class TaskController extends Controller
     public function checkNotifications()
     {
         $tasks = auth()->user()->tasks()->whereNotNull('deadline')->get();
-    
+
         foreach ($tasks as $task) {
-            $deadline = \Carbon\Carbon::parse($task->deadline);
-            $notificationTime = $deadline->subMinutes($task->notification_minutes);
-    
-            if (\Carbon\Carbon::now()->greaterThanOrEqualTo($notificationTime) && \Carbon\Carbon::now()->lessThan($deadline)) {
-                // Kirimkan notifikasi, atau simpan ke dalam session untuk frontend
+            $deadline = Carbon::parse($task->deadline);
+            $notificationTime = $deadline->subMinutes($task->notification_minutes ?? 0);
+
+            if (Carbon::now()->greaterThanOrEqualTo($notificationTime) && Carbon::now()->lessThan($deadline)) {
                 session()->flash('notification', 'Tugas "' . $task->title . '" mendekati deadline!');
             }
         }
-    
+
         return view('tasks.index', compact('tasks'));
     }
 
@@ -54,7 +55,7 @@ class TaskController extends Controller
             'category' => 'required|string|max:255',
             'description' => 'nullable|string',
             'deadline' => 'required|date',
-            'notification_minutes' => 'nullable|integer|min:1'
+            'notification_minutes' => 'nullable|integer|min:1',
         ]);
 
         auth()->user()->tasks()->create($validated);
@@ -74,7 +75,7 @@ class TaskController extends Controller
             'category' => 'required|string|max:255',
             'description' => 'nullable|string',
             'deadline' => 'required|date',
-            'notification_minutes' => 'nullable|integer|min:1'
+            'notification_minutes' => 'nullable|integer|min:1',
         ]);
 
         $task->update($validated);
@@ -99,25 +100,55 @@ class TaskController extends Controller
 
     public function dashboard()
     {
-        $totalTasks = auth()->user()->tasks()->count();
-        $completedTasks = auth()->user()->tasks()->where('completed', true)->count();
-        $pendingTasks = auth()->user()->tasks()->where('completed', false)->count();
+        $user = auth()->user();
 
-        return view('tasks.dashboard', compact('totalTasks', 'completedTasks', 'pendingTasks'));
+        // Mengganti 'status' menjadi 'completed'
+        $totalTasks = $user->tasks()->count();
+        $completedTasks = $user->tasks()->where('completed', true)->count();
+        $incompleteTasks = $user->tasks()->where('completed', false)->count();
+
+        $upcomingTasks = $user->tasks()
+            ->whereDate('deadline', '>=', now())
+            ->orderBy('deadline')
+            ->limit(5)
+            ->get();
+
+        $recentForums = $user->forums()
+            ->orderBy('forums.updated_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        $popularCategories = \App\Models\Category::withCount('tasks')
+            ->orderByDesc('tasks_count')
+            ->limit(5)
+            ->get();
+
+        $recentNotifications = $user->notifications()
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        return view('tasks.dashboard', compact(
+            'totalTasks',
+            'completedTasks',
+            'incompleteTasks',
+            'upcomingTasks',
+            'recentForums',
+            'popularCategories',
+            'recentNotifications'
+        ));
     }
 
     public function calendar()
-{
-    $tasks = Task::all()->map(function ($task) {
-        return [
-            'title' => $task->title,
-            'start' => $task->deadline,
-            'description' => $task->description,
-        ];
-    });
+    {
+        $tasks = Task::all()->map(function ($task) {
+            return [
+                'title' => $task->title,
+                'start' => $task->deadline,
+                'description' => $task->description,
+            ];
+        });
 
-    return view('tasks.calendar', compact('tasks'));
-}
-
-
+        return view('tasks.calendar', compact('tasks'));
+    }
 }

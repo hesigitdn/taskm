@@ -12,6 +12,7 @@ class TaskSeeder extends Seeder
         $tasks = [
             [
                 'user_id' => 1,
+                'category_id' => 1,
                 'title' => 'Laporan Progres Project',
                 'description' => null,
                 'category' => 'Manajemen Proyek',
@@ -23,6 +24,7 @@ class TaskSeeder extends Seeder
             ],
             [
                 'user_id' => 1,
+                'category_id' => 2,
                 'title' => 'Gform Responden',
                 'description' => null,
                 'category' => 'Statistika untuk Bisnis',

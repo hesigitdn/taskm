@@ -6,12 +6,29 @@
     <!-- Forum Detail -->
     <div class="bg-white rounded-2xl shadow-md p-8 border border-gray-100">
         <h1 class="text-3xl font-bold text-gray-900">{{ $forum->title }}</h1>
-        <p class="text-sm text-gray-500 mt-1">
+
+        {{-- Tombol Edit Forum --}}
+        @can('update', $forum)
+            <a href="{{ route('forums.edit', $forum->id) }}"
+               class="inline-block mt-2 bg-blue-100 text-blue-700 text-sm px-3 py-1.5 rounded-full hover:bg-blue-200">
+               ✏️ Edit Forum
+            </a>
+        @endcan
+
+                {{-- Tombol kelola anggota Forum --}}
+        @can('update', $forum)
+            <a href="{{ route('forums.members', $forum->id) }}"
+               class="inline-block mt-2 bg-blue-100 text-blue-700 text-sm px-3 py-1.5 rounded-full hover:bg-blue-200">
+               ✏️ Klola Anggota
+            </a>
+        @endcan
+
+        <p class="text-sm text-gray-500 mt-3">
             oleh <span class="font-medium text-gray-700">{{ $forum->user->name }}</span> · {{ $forum->created_at->diffForHumans() }}
         </p>
 
         <div class="mt-5 text-gray-800 text-base leading-relaxed">
-            {{ $forum->description ?? $forum->body }}
+            {{ $forum->body ?? $forum->body }}
         </div>
 
         @if (! $isMember)

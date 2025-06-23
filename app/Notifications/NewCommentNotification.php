@@ -2,31 +2,36 @@
 
 namespace App\Notifications;
 
-use App\Models\Forum;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use Illuminate\Notifications\Messages\DatabaseMessage;
+use App\Models\Comment;
 
-class NewCommentNotification extends Notification
+class NewCommentNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    protected $forum;
+    protected $comment;
 
-    public function __construct(Forum $forum)
+    public function __construct(Comment $comment)
     {
-        $this->forum = $forum;
+        $this->comment = $comment;
     }
 
     public function via($notifiable)
     {
-        return ['database']; // Simpan ke database, bisa ditambah 'mail' nanti
+        return ['database'];
     }
 
-    public function toDatabase($notifiable)
-    {
-        return [
-            'message' => 'Ada komentar baru di forum: ' . $this->forum->title,
-            'forum_id' => $this->forum->id,
-        ];
-    }
+public function toDatabase($notifiable)
+{
+    return [
+        'title' => 'Diskusi Baru di Forum',
+        'body' => "{$this->comment->user->name} mengomentari forum: {$this->comment->forum->title}",
+        'forum_id' => $this->comment->forum_id,
+        'url' => route('forums.show', $this->comment->forum_id),
+    ];
+}
+
 }

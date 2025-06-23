@@ -17,11 +17,16 @@ class Task extends Model
         'completed',
         'notification_minutes', // Tambahkan kolom pengaturan notifikasi
     ];
+    protected $casts = [
+    'deadline' => 'datetime',
+];
 
-    public function category()
-    {
-        return $this->belongsTo(Category::class, 'category', 'name');
-    }
+
+public function category()
+{
+    return $this->belongsTo(Category::class);
+}
+
 
     public function user()
     {

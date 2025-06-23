@@ -24,21 +24,21 @@ class CommentController extends Controller
             $path = $request->file('attachment')->store('attachments', 'public');
         }
 
-        $comment = Comment::create([
-            'forum_id' => $request->forum_id,
-            'parent_id' => $request->parent_id,
-            'user_id' => Auth::id(),
-            'body' => $request->body,
-            'attachment' => $path,
-        ]);
+$comment = Comment::create([
+    'user_id' => auth()->id(),
+    'forum_id' => $request->forum_id,
+    'body' => $request->body,
+]);
 
-        // Kirim notifikasi ke semua anggota forum, kecuali pengirim komentar
-        $forum = Forum::with('members')->find($request->forum_id);
-        foreach ($forum->members as $member) {
-            if ($member->id !== auth()->id()) {
-                $member->notify(new NewCommentNotification($forum));
-            }
-        }
+// Kirim notifikasi ke semua anggota forum (kecuali pengomentar)
+$forum = $comment->forum;
+
+$forum->members
+    ->where('id', '!=', auth()->id()) // Jangan kirim ke diri sendiri
+    ->each(function ($user) use ($comment) {
+        $user->notify(new NewCommentNotification($comment));
+    });
+
 
         return back()->with('success', 'Komentar berhasil ditambahkan.');
     }

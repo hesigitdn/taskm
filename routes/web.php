@@ -83,6 +83,12 @@ Route::middleware(['auth'])->group(function () {
         return back()->with('success', 'Semua notifikasi telah ditandai sebagai dibaca.');
     })->name('notifications.read');
 
+    Route::patch('/tasks/{task}/toggle-status', [TaskController::class, 'toggleStatus'])->name('tasks.toggleStatus');
+
+    // routes/web.php
+    Route::post('/tasks/{task}/update-deadline', [TaskController::class, 'updateDeadline']);
+    
+
 });
 
 

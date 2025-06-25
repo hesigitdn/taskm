@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="max-w-3xl mx-auto px-6 py-12">
-    <h1 class="text-3xl font-bold text-gray-900 mb-6">📝 Buat Forum Baru</h1>
+    <h1 class="text-3xl font-bold text-gray-900 mb-6">Buat Forum Baru</h1>
 
     @if ($errors->any())
         <div class="mb-6 bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm">

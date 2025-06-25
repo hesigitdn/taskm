@@ -8,7 +8,7 @@
         <h1 class="text-3xl font-bold text-gray-800">📁 Daftar Kategori</h1>
         <a href="{{ route('categories.create') }}"
            class="inline-flex items-center px-5 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-orange-400 to-pink-400 text-white hover:scale-105 shadow-md transition-all">
-            ➕ Tambah Kategori
+            Tambah Kategori
         </a>
     </div>
 

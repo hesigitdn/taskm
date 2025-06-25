@@ -39,5 +39,9 @@
         </main>
     </div>
 
+    <!-- CSRF Token Global untuk JavaScript -->
+    <script>
+        window.csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    </script>
 </body>
 </html>

@@ -7,7 +7,7 @@ use App\Models\Forum;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Notifications\NewCommentNotification;
+use App\Notifications\ForumNotification;
 
 class CommentController extends Controller
 {
@@ -24,21 +24,24 @@ class CommentController extends Controller
             $path = $request->file('attachment')->store('attachments', 'public');
         }
 
-$comment = Comment::create([
-    'user_id' => auth()->id(),
-    'forum_id' => $request->forum_id,
-    'body' => $request->body,
-]);
+        $comment = Comment::create([
+            'user_id' => auth()->id(),
+            'forum_id' => $request->forum_id,
+            'body' => $request->body,
+            'attachment' => $path,
+        ]);
 
-// Kirim notifikasi ke semua anggota forum (kecuali pengomentar)
-$forum = $comment->forum;
-
-$forum->members
-    ->where('id', '!=', auth()->id()) // Jangan kirim ke diri sendiri
-    ->each(function ($user) use ($comment) {
-        $user->notify(new NewCommentNotification($comment));
-    });
-
+        // Kirim notifikasi ke semua anggota forum (kecuali pengomentar)
+        $forum = $comment->forum;
+        $forum->members
+            ->where('id', '!=', auth()->id())
+            ->each(function ($user) use ($comment) {
+                $user->notify(new ForumNotification(
+                    'Diskusi Baru di Forum',
+                    "{$comment->user->name} mengomentari forum: {$comment->forum->title}",
+                    route('forums.show', $comment->forum_id)
+                ));
+            });
 
         return back()->with('success', 'Komentar berhasil ditambahkan.');
     }
@@ -57,13 +60,22 @@ $forum->members
             $path = $request->file('attachment')->store('attachments', 'public');
         }
 
-        Comment::create([
+        $reply = Comment::create([
             'forum_id' => $parent->forum_id,
             'parent_id' => $parentId,
             'user_id' => auth()->id(),
             'body' => $request->body,
             'attachment' => $path,
         ]);
+
+        // Kirim notifikasi ke pemilik komentar jika bukan diri sendiri
+        if ($parent->user_id !== auth()->id()) {
+            $parent->user->notify(new ForumNotification(
+                'Balasan Komentar di Forum',
+                "{$reply->user->name} membalas komentarmu di forum: {$reply->forum->title}",
+                route('forums.show', $reply->forum_id) . "#komentar-{$reply->id}"
+            ));
+        }
 
         return redirect()->route('forums.show', $parent->forum_id)
                          ->with('success', 'Balasan berhasil dikirim!');
@@ -93,13 +105,11 @@ $forum->members
             'attachment' => 'nullable|file|max:2048',
         ]);
 
-        // Hapus lampiran lama jika diminta
         if ($request->has('remove_attachment') && $comment->attachment) {
             Storage::disk('public')->delete($comment->attachment);
             $comment->attachment = null;
         }
 
-        // Upload lampiran baru
         if ($request->hasFile('attachment')) {
             if ($comment->attachment) {
                 Storage::disk('public')->delete($comment->attachment);
@@ -124,7 +134,6 @@ $forum->members
             abort(403);
         }
 
-        // Hapus lampiran jika ada
         if ($comment->attachment) {
             Storage::disk('public')->delete($comment->attachment);
         }

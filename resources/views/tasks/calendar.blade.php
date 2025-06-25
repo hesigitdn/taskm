@@ -37,6 +37,7 @@
 
         const calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
+            editable: true,
             locale: 'id',
             headerToolbar: {
                 left: 'prev,next today',
@@ -57,6 +58,34 @@
                 document.getElementById('modalDeadline').textContent = `📅 ${deadline}`;
                 document.getElementById('taskModal').classList.remove('hidden');
             },
+                eventDrop: function (info) {
+                    const taskId = info.event.id;
+                    const newDeadline = info.event.start.toISOString().slice(0, 19).replace('T', ' '); // Format ke 'Y-m-d H:i:s'
+
+                    fetch(`/tasks/${taskId}/update-deadline`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ deadline: newDeadline })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Gagal memperbarui deadline.');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log(data.message || 'Deadline berhasil diperbarui');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        info.revert(); // Kembalikan ke posisi semula jika gagal
+                        alert('❌ Tidak dapat memperbarui deadline. Silakan coba lagi.');
+                    });
+                },
+
             dayMaxEvents: true,
             aspectRatio: 2.1,
             windowResize: () => calendar.render()
@@ -124,4 +153,70 @@
         text-overflow: ellipsis;
     }
 </style>
+
+<!-- Modal Notifikasi -->
+<div id="notificationModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/30 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-sm mx-auto rounded-2xl shadow-xl p-6 space-y-4 animate-scale-in">
+        <div class="flex items-center gap-3">
+            <svg id="modalIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path id="modalIconPath" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M5 13l4 4L19 7" />
+            </svg>
+            <h2 id="notificationTitle" class="text-lg font-semibold text-gray-800">Berhasil!</h2>
+        </div>
+        <p id="notificationText" class="text-gray-600 text-sm">Deadline berhasil diperbarui.</p>
+        <div class="text-right">
+            <button onclick="closeNotification()"
+                    class="bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2 rounded-full">
+                Tutup
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes scale-in {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.animate-scale-in {
+    animation: scale-in 0.2s ease-out;
+}
+</style>
+
 @endsection
+<script>
+    function showNotification(success = true, message = 'Deadline berhasil diperbarui.') {
+        const modal = document.getElementById('notificationModal');
+        const icon = document.getElementById('modalIcon');
+        const iconPath = document.getElementById('modalIconPath');
+        const title = document.getElementById('notificationTitle');
+        const text = document.getElementById('notificationText');
+
+        // Ubah tampilan berdasarkan hasil
+        if (success) {
+            icon.classList.remove('text-red-500');
+            icon.classList.add('text-green-500');
+            iconPath.setAttribute('d', "M5 13l4 4L19 7");
+            title.textContent = 'Berhasil!';
+        } else {
+            icon.classList.remove('text-green-500');
+            icon.classList.add('text-red-500');
+            iconPath.setAttribute('d', "M6 18L18 6M6 6l12 12");
+            title.textContent = 'Gagal!';
+        }
+
+        text.textContent = message;
+
+        // Tampilkan modal
+        modal.classList.remove('hidden');
+
+        // Tutup otomatis setelah 3 detik
+        setTimeout(closeNotification, 3000);
+    }
+
+    function closeNotification() {
+        document.getElementById('notificationModal').classList.add('hidden');
+    }
+</script>
+

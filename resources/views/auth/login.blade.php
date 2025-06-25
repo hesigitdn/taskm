@@ -26,7 +26,7 @@
             <input id="password" type="password" name="password" required
                    class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500" />
             @error('password')
-                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                <p class="text-red-500 text-sm italic mt-1">{{ $message }}</p>
             @enderror
         </div>
 
@@ -38,9 +38,9 @@
             </label>
         </div>
 
-        <div class="flex justify-between items-center">
+        <!--<div class="flex justify-between items-center">
             <a href="{{ route('password.request') }}" class="text-sm text-orange-500 hover:underline">Lupa sandi?</a>
-        </div>
+        </div>-->
 
         <div>
             <button type="submit"

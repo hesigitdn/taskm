@@ -7,20 +7,18 @@
     <div class="bg-white rounded-2xl shadow-md p-8 border border-gray-100">
         <h1 class="text-3xl font-bold text-gray-900">{{ $forum->title }}</h1>
 
-        {{-- Tombol Edit Forum --}}
+        {{-- Tombol Edit Forum dan Kelola Anggota --}}
         @can('update', $forum)
-            <a href="{{ route('forums.edit', $forum->id) }}"
-               class="inline-block mt-2 bg-blue-100 text-blue-700 text-sm px-3 py-1.5 rounded-full hover:bg-blue-200">
-               ✏️ Edit Forum
-            </a>
-        @endcan
-
-                {{-- Tombol kelola anggota Forum --}}
-        @can('update', $forum)
-            <a href="{{ route('forums.members', $forum->id) }}"
-               class="inline-block mt-2 bg-blue-100 text-blue-700 text-sm px-3 py-1.5 rounded-full hover:bg-blue-200">
-               ✏️ Klola Anggota
-            </a>
+            <div class="flex flex-wrap gap-2 mt-2">
+                <a href="{{ route('forums.edit', $forum->id) }}"
+                   class="bg-blue-100 text-blue-700 text-sm px-3 py-1.5 rounded-full hover:bg-blue-200">
+                   Edit Forum
+                </a>
+                <a href="{{ route('forums.members', $forum->id) }}"
+                   class="bg-blue-100 text-blue-700 text-sm px-3 py-1.5 rounded-full hover:bg-blue-200">
+                   Kelola Anggota
+                </a>
+            </div>
         @endcan
 
         <p class="text-sm text-gray-500 mt-3">

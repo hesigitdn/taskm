@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Notifications\ForumNotification;
 
 class ForumController extends Controller
 {
@@ -25,10 +26,9 @@ class ForumController extends Controller
         if ($request->has('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
-                ->orWhere('body', 'like', '%' . $request->search . '%');
+                    ->orWhere('body', 'like', '%' . $request->search . '%');
             });
         }
-
 
         $forums = $query->paginate(5);
 
@@ -58,6 +58,16 @@ class ForumController extends Controller
         ]);
 
         $forum->members()->attach(Auth::id());
+
+        // Kirim notifikasi ke semua user lain
+        $otherUsers = User::where('id', '!=', Auth::id())->get();
+        foreach ($otherUsers as $user) {
+            $user->notify(new ForumNotification(
+                'Forum Baru Dibuat',
+                Auth::user()->name . ' membuat forum baru: ' . $forum->title,
+                route('forums.show', $forum->id)
+            ));
+        }
 
         return redirect()->route('forums.index')->with('success', 'Forum berhasil dibuat.');
     }
@@ -115,6 +125,17 @@ class ForumController extends Controller
             'description' => $request->description,
         ]);
 
+        // Kirim notifikasi ke anggota selain pembuat
+        foreach ($forum->members as $member) {
+            if ($member->id !== auth()->id()) {
+                $member->notify(new ForumNotification(
+                    'Forum Diperbarui',
+                    auth()->user()->name . ' mengedit forum: ' . $forum->title,
+                    route('forums.show', $forum->id)
+                ));
+            }
+        }
+
         return redirect()->route('forums.show', $forum->id)->with('success', 'Forum berhasil diperbarui.');
     }
 
@@ -137,29 +158,26 @@ class ForumController extends Controller
         return back()->with('success', 'Anggota berhasil dikeluarkan.');
     }
 
-public function list(Request $request)
-{
-    $query = Forum::with('user')->latest();
+    public function list(Request $request)
+    {
+        $query = Forum::with('user')->latest();
 
-    // Filter Forum Saya
-    if ($request->filter === 'mine') {
-        $query->whereHas('members', function ($q) {
-            $q->where('user_id', auth()->id());
-        });
+        if ($request->filter === 'mine') {
+            $query->whereHas('members', function ($q) {
+                $q->where('user_id', auth()->id());
+            });
+        }
+
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%$search%")
+                    ->orWhere('body', 'like', "%$search%");
+            });
+        }
+
+        $forums = $query->paginate(5);
+
+        return view('forums.partials.list', compact('forums'));
     }
-
-    // Pencarian
-    if ($request->search) {
-        $search = $request->search;
-        $query->where(function ($q) use ($search) {
-            $q->where('title', 'like', "%$search%")
-              ->orWhere('body', 'like', "%$search%");
-        });
-    }
-
-    $forums = $query->paginate(5);
-
-    return view('forums.partials.list', compact('forums'));
-}
-
 }

@@ -25,8 +25,8 @@
                 class="px-4 py-2 rounded-full border border-gray-300 focus:ring-2 focus:ring-orange-400">
                 <option value="">Semua</option>
                 @foreach ($categories as $category)
-                    <option value="{{ $category }}" {{ request('category') === $category ? 'selected' : '' }}>
-                        {{ $category }}
+                    <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                        {{ $category->name }}
                     </option>
                 @endforeach
             </select>
@@ -60,39 +60,46 @@
                 <div class="bg-white p-6 rounded-2xl shadow hover:shadow-lg transform hover:scale-[1.01] transition">
                     <div class="flex justify-between items-start mb-2">
                         <div class="flex items-start gap-3">
+                            <!-- Checkbox Checklist -->
                             <input type="checkbox" id="checkbox-{{ $task->id }}"
                                 onchange="toggleTaskStatus({{ $task->id }})"
                                 class="mt-1 w-5 h-5 text-orange-500 border-gray-300 rounded"
                                 {{ $task->completed ? 'checked' : '' }}>
 
+                            <!-- Judul & Deskripsi -->
                             <div>
-                                <h2 id="title-{{ $task->id }}"
-                                    class="text-lg font-semibold {{ $task->completed ? 'line-through text-gray-400' : 'text-gray-800' }}">
-                                    {{ $task->title }}
-                                </h2>
+                                <a href="{{ route('tasks.show', $task->id) }}" class="block group">
+                                    <h2 id="title-{{ $task->id }}"
+                                        class="text-lg font-semibold group-hover:underline {{ $task->completed ? 'line-through text-gray-400' : 'text-gray-800' }}">
+                                        {{ $task->title }}
+                                    </h2>
+                                </a>
                                 @if ($task->description)
-                                    <p class="text-sm text-gray-500 mt-1">{{ $task->description }}</p>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        {{ Str::limit($task->description, 100) }}
+                                    </p>
                                 @endif
                             </div>
                         </div>
 
+                        <!-- Deadline -->
                         <div class="text-sm text-gray-500 text-right whitespace-nowrap">
                             {{ \Carbon\Carbon::parse($task->deadline)->translatedFormat('d M Y H:i') }}
-                            @if (\Carbon\Carbon::now()->gt($task->deadline) && !$task->completed)
-                                <span class="text-red-500 font-semibold">(Overdue)</span>
+                            @if (!$task->completed && \Carbon\Carbon::now()->gt($task->deadline))
+                                <span class="text-red-500 font-semibold block">(Terlambat)</span>
                             @endif
                         </div>
                     </div>
 
                     <!-- Kategori -->
-                    <div class="flex flex-wrap gap-2 mb-4">
-                        @foreach (explode(',', $task->category) as $category)
-                            <span class="text-xs font-medium text-white px-3 py-1 rounded-full"
-                                style="background-color: {{ getCategoryColor($category) }};">
-                                {{ $category }}
+                    @if ($task->category)
+                        <div class="mb-4">
+                            <span class="inline-block text-xs font-medium text-white px-3 py-1 rounded-full"
+                                  style="background-color: {{ getCategoryColor($task->category->name) }};">
+                                {{ $task->category->name }}
                             </span>
-                        @endforeach
-                    </div>
+                        </div>
+                    @endif
 
                     <!-- Aksi -->
                     <div class="flex gap-3">
@@ -148,7 +155,7 @@ function toggleTaskStatus(taskId) {
 }
 </script>
 
-{{-- Kategori Warna --}}
+{{-- Warna kategori --}}
 @php
 function getCategoryColor($category) {
     $colors = ['#FF7000', '#00A3FF', '#12B76A', '#6366F1', '#EAB308'];

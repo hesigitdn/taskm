@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -10,19 +11,18 @@ class TaskController extends Controller
 {
     public function index(Request $request)
     {
-        $query = auth()->user()->tasks();
+        $query = auth()->user()->tasks()->with('category');
 
         if ($request->has('category') && $request->category != '') {
-            $query->where('category', $request->category);
+            $query->where('category_id', $request->category);
         }
 
-        if ($request->has('status') && $request->status != '') {
-            // Perbaikan dari 'status' menjadi 'completed'
+        if ($request->has('status') && $request->status !== '') {
             $query->where('completed', filter_var($request->status, FILTER_VALIDATE_BOOLEAN));
         }
 
         $tasks = $query->get();
-        $categories = auth()->user()->tasks()->pluck('category')->unique();
+        $categories = Category::all();
 
         return view('tasks.index', compact('tasks', 'categories'));
     }
@@ -45,14 +45,15 @@ class TaskController extends Controller
 
     public function create()
     {
-        return view('tasks.create');
+        $categories = Category::all();
+        return view('tasks.create', compact('categories'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
             'deadline' => 'required|date',
             'notification_minutes' => 'nullable|integer|min:1',
@@ -65,14 +66,15 @@ class TaskController extends Controller
 
     public function edit(Task $task)
     {
-        return view('tasks.edit', compact('task'));
+        $categories = Category::all();
+        return view('tasks.edit', compact('task', 'categories'));
     }
 
     public function update(Request $request, Task $task)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
             'deadline' => 'required|date',
             'notification_minutes' => 'nullable|integer|min:1',
@@ -95,30 +97,31 @@ class TaskController extends Controller
         $task->completed = !$task->completed;
         $task->save();
 
-        return response()->json(['success' => true]);
+        return back()->with('success', 'Status tugas diperbarui.');
     }
 
     public function dashboard()
     {
         $user = auth()->user();
 
-        // Mengganti 'status' menjadi 'completed'
         $totalTasks = $user->tasks()->count();
         $completedTasks = $user->tasks()->where('completed', true)->count();
         $incompleteTasks = $user->tasks()->where('completed', false)->count();
 
         $upcomingTasks = $user->tasks()
-            ->whereDate('deadline', '>=', now())
-            ->orderBy('deadline')
+            ->where('completed', false)
+            ->whereNotNull('deadline')
+            ->orderBy('deadline', 'asc')
             ->limit(5)
             ->get();
+
 
         $recentForums = $user->forums()
             ->orderBy('forums.updated_at', 'desc')
             ->limit(5)
             ->get();
 
-        $popularCategories = \App\Models\Category::withCount('tasks')
+        $popularCategories = Category::withCount('tasks')
             ->orderByDesc('tasks_count')
             ->limit(5)
             ->get();
@@ -141,8 +144,9 @@ class TaskController extends Controller
 
     public function calendar()
     {
-        $tasks = Task::all()->map(function ($task) {
+        $tasks = auth()->user()->tasks->map(function ($task) {
             return [
+                'id' => $task->id, // ← WAJIB ADA
                 'title' => $task->title,
                 'start' => $task->deadline,
                 'description' => $task->description,
@@ -151,4 +155,25 @@ class TaskController extends Controller
 
         return view('tasks.calendar', compact('tasks'));
     }
+
+
+        public function show(Task $task)
+    {
+        return view('tasks.show', compact('task'));
+    }
+
+
+
+public function updateDeadline(Request $request, Task $task)
+{
+    $request->validate([
+        'deadline' => 'required|date',
+    ]);
+
+    $task->deadline = $request->deadline;
+    $task->save();
+
+    return response()->json(['message' => 'Deadline berhasil diperbarui.']);
+}
+
 }

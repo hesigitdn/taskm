@@ -5,7 +5,7 @@
 
     <!-- Heading -->
     <div class="flex justify-between items-center">
-        <h1 class="text-3xl font-bold text-gray-800">📊 Dashboard</h1>
+        <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
     </div>
 
     <!-- Statistik & Chart -->

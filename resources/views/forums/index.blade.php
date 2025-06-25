@@ -6,7 +6,7 @@
         <h1 class="text-2xl font-bold text-gray-800">📚 Forum Diskusi</h1>
         <a href="{{ route('forums.create') }}"
            class="inline-flex items-center px-5 py-2.5 bg-orange-500 text-white rounded-full hover:bg-orange-600 text-sm font-semibold transition">
-            ➕ Buat Forum
+            Buat Forum
         </a>
     </div>
 

@@ -17,7 +17,6 @@ return new class extends Migration
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade'); // foreign key relasi kategori
             $table->string('title');
             $table->text('description')->nullable();
-            $table->string('category');
             $table->dateTime('deadline');
             $table->boolean('completed')->default(false);
             $table->timestamps();

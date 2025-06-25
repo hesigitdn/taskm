@@ -12,7 +12,8 @@ class Task extends Model
     protected $fillable = [
         'title',
         'description',
-        'category',
+        'user_id',
+        'category_id',
         'deadline',
         'completed',
         'notification_minutes', // Tambahkan kolom pengaturan notifikasi
